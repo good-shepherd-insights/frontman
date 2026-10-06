@@ -27,6 +27,11 @@ defmodule FrontmanServerWeb.Endpoint do
     auth_token: true
   )
 
+  # FrontmanStaticCORS must run BEFORE Plug.Static: static responses halt at
+  # that plug, so a downstream CORS plug never sees them.
+  plug(FrontmanServerWeb.Plugs.CORS, path_prefix: "/api")
+  plug(FrontmanServerWeb.Plugs.CORS, path_prefix: "/frontman-client")
+
   plug(Plug.Static,
     at: "/",
     from: :frontman_server,
