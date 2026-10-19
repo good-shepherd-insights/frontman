@@ -47,11 +47,11 @@ config :frontman_server, cloak_key: env!("CLOAK_KEY", :string!)
 
 if config_env() in [:dev, :prod] do
   config :workos, WorkOS.Client,
-    api_key: env!("WORKOS_API_KEY", :string!),
-    client_id: env!("WORKOS_CLIENT_ID", :string!)
+    api_key: env!("WORKOS_API_KEY", :string, nil),
+    client_id: env!("WORKOS_CLIENT_ID", :string, nil)
 end
 
-if config_env() not in [:test, :e2e] do
+if config_env() == :prod do
   config :frontman_server, :stripe,
     secret_key: env!("STRIPE_SECRET_KEY", :string!),
     webhook_secret: env!("STRIPE_WEBHOOK_SECRET", :string!)
