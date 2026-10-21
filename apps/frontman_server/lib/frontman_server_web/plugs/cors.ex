@@ -28,8 +28,8 @@ defmodule FrontmanServerWeb.Plugs.CORS do
   def call(conn, opts) do
     path_prefix = Keyword.get(opts, :path_prefix, "/api")
 
-    case String.starts_with?(conn.request_path, path_prefix) do
-      true ->
+    cond do
+      String.starts_with?(conn.request_path, path_prefix) ->
         conn
         |> put_resp_header("access-control-allow-origin", "*")
         |> put_resp_header(
@@ -39,7 +39,28 @@ defmodule FrontmanServerWeb.Plugs.CORS do
         |> put_resp_header("access-control-allow-headers", "authorization, content-type")
         |> handle_preflight()
 
-      false ->
+      # The self-hosted browser client bundle is served cross-origin to the QA
+      # page (same as api.frontman.sh serving app.frontman.sh assets). Echo the
+      # request Origin and allow credentials: zone cookies (e.g. cf_zaraz) ride
+      # along on cross-origin requests, and "ACAO: *" is rejected by browsers
+      # for credentialed requests - which showed up as "Failed to fetch".
+      String.starts_with?(conn.request_path, "/frontman-client") ->
+        case get_req_header(conn, "origin") do
+          [origin | _] ->
+            conn
+            |> put_resp_header("access-control-allow-origin", origin)
+            |> put_resp_header("access-control-allow-credentials", "true")
+            |> put_resp_header("vary", "origin")
+            |> put_resp_header("access-control-allow-headers", "authorization, content-type")
+            |> handle_preflight()
+
+          [] ->
+            conn
+            |> put_resp_header("access-control-allow-origin", "*")
+            |> put_resp_header("access-control-allow-headers", "authorization, content-type")
+        end
+
+      true ->
         conn
     end
   end
